@@ -2284,9 +2284,11 @@
 
           updateUI(name, score, band, prob, bsi, gnn, anomaly, limit, isGhost);
         } catch (error) {
-  console.error("API Error:", error);
-  alert("Something went wrong. Check console.");
-}
+          console.error("Scoring error:", error);
+          alert(
+            "Backend API not available. Make sure server is running on http://localhost:8000",
+          );
+        }
       }
 
       function updateUI(
@@ -2669,12 +2671,12 @@
         }
       }
 
-      
+      // ── Init ─────────────────────────────────────────
+      window.onload = () => {
+         computeScore();
+         drawMiniNetwork(0.12, false);
+       };
 
-      // ── Init ────────────────────────────────────────────────────────────────────────
-      computeScore();
-      drawMiniNetwork(0.12, false);
     </script>
   </body>
 </html>
-
