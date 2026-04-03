@@ -18,15 +18,29 @@ Docs: http://localhost:8000/docs
 import sys
 import time
 import uuid
+import os
 import numpy as np
 import pandas as pd
 import joblib
+import requests
 from pathlib import Path
 from typing import Optional, List, Dict, Any
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+
+# Load environment variables
+env_file = Path(__file__).parent.parent / ".env"
+load_dotenv(dotenv_path=env_file)
+
+# Verify API key is loaded
+if not os.getenv('OPENROUTER_API_KEY'):
+    print("[WARNING] OPENROUTER_API_KEY not found in .env file!")
+    print(f"[INFO] Looking for .env at: {env_file}")
+else:
+    print(f"[INFO] OpenRouter API key loaded from .env")
 
 sys.path.append(str(Path(__file__).parent.parent))
 from config.settings import (
@@ -155,6 +169,14 @@ class ScoreResponse(BaseModel):
     request_id: str
 
 
+class ChatRequest(BaseModel):
+    message: str
+    merchant_context: Optional[Dict[str, Any]] = Field(
+        default={},
+        description="Merchant context: name, score, band, loan_limit, risk_factor, status"
+    )
+
+
 # ─── Core Scoring Logic ───────────────────────────────────────────────────────
 
 def probability_to_score(prob: float) -> int:
@@ -223,6 +245,29 @@ def run_gate2a(m: dict) -> dict:
         "revenue_consistency": round(1 - min(revenue_cv, 1), 4),
         "settlement_regularity": round(settlement, 4),
         "active_days_ratio": round(active, 4),
+    }
+
+
+def run_gate2b(m: dict) -> dict:
+    """Gate 2B: GNN-based Network Contagion Risk.
+    Uses input gnn_risk_score or trained model if available."""
+    
+    gnn_score = m.get("gnn_risk_score", 0.3)
+    gnn_score = float(np.clip(gnn_score, 0, 1))
+    
+    # Interpret risk level
+    if gnn_score < 0.33:
+        contagion = "Low"
+    elif gnn_score < 0.67:
+        contagion = "Medium"
+    else:
+        contagion = "High"
+    
+    print(f"[Gate2B] gnn_risk_score={gnn_score:.4f}, contagion_risk={contagion}")
+    
+    return {
+        "gnn_risk_score": round(gnn_score, 4),
+        "contagion_risk": contagion,
     }
 
 
@@ -312,6 +357,7 @@ def full_pipeline(m: dict) -> dict:
             "loan_limit": 0,
             "gate1": g1,
             "gate2a": {},
+            "gate2b": {},
             "gate3": {},
             "shap_reasons": [],
             "processing_time_ms": round((time.time() - t0) * 1000, 2),
@@ -319,6 +365,9 @@ def full_pipeline(m: dict) -> dict:
 
     g2a = run_gate2a(m)
     m["bsi_score"] = g2a["bsi_score"]
+
+    g2b = run_gate2b(m)
+    m["gnn_risk_score"] = g2b["gnn_risk_score"]
 
     g3 = run_gate3(m)
 
@@ -330,6 +379,7 @@ def full_pipeline(m: dict) -> dict:
         "loan_limit": g3["loan_limit"],
         "gate1": g1,
         "gate2a": g2a,
+        "gate2b": g2b,
         "gate3": g3,
         "shap_reasons": g3.get("shap_reasons", []),
         "processing_time_ms": round((time.time() - t0) * 1000, 2),
@@ -442,6 +492,188 @@ def get_merchant(merchant_id: str):
     if row.empty:
         raise HTTPException(status_code=404, detail=f"Merchant {merchant_id} not found")
     return row.iloc[0].to_dict()
+
+
+@app.post("/chat")
+async def fimi_chat(request: ChatRequest):
+    """Fimi AI chatbot powered by OpenRouter LLM."""
+    
+    if not request.message.strip():
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+    
+    # Build system prompt with merchant context
+    merchant_context = request.merchant_context or {}
+    name = merchant_context.get("name", "Merchant")
+    score = merchant_context.get("score", "N/A")
+    band = merchant_context.get("band", "N/A")
+    loan_limit = merchant_context.get("loan_limit", "N/A")
+    risk_factor = merchant_context.get("risk_factor", "N/A")
+    status = merchant_context.get("status", "SCORED")
+    
+    system_prompt = f"""You are Fimi AI, the official Personal Credit Advisor for Paytm Merchants.
+
+CURRENT MERCHANT CONTEXT:
+• Name: {name}
+• CrediNode Score: {score}
+• Band: {band}
+• Loan Limit: ₹{loan_limit}
+• Top Risk Factor: {risk_factor}
+• Account Status: {status}
+
+═══ FORMATTING RULES (MANDATORY) ═══
+
+1. STRUCTURE - ALWAYS USE THIS FORMAT:
+   • Start with a short greeting (1 line)
+   • Add line breaks between sections (empty line)
+   • Use section headers like: "📊 Your Score" or "💡 Tips" or "✅ What's Working"
+   • Use emojis liberally: 🎉 ✅ ⚠️ 💡 📈 🙏 ⭐ 📊
+   • Number all lists: 1. 2. 3. (not bullets)
+   • End with encouraging note
+
+2. NEVER output as one long paragraph
+   MUST have line breaks after every 2-3 sentences
+   MUST separate sections with blank lines
+   MUST use section headers with emojis
+
+3. EMOJIS - USE THESE:
+   Score intro: 📊
+   Tips/Advice: 💡
+   Success: ✅ 🎉
+   Warning: ⚠️
+   Action items: 📋
+   Overall: 🙏 ⭐
+
+4. LANGUAGE
+   Reply in English if question is in English, and Hinglish if question is in Hindi.
+
+5. RESPONSE TEMPLATE - USE THIS EXACT FORMAT WITH REAL BLANK LINES:
+
+   👋 Hello [Name]! 
+
+   📊 Your Score Overview
+   • Score: {score}
+   • Band: {band}
+   • Loan Limit: ₹{loan_limit}
+   [Your interpretation - 2-3 sentences with emojis]
+
+   ✅ What's Working Well
+   1. [Positive factor]
+   2. [Positive factor]
+
+   ⚠️ Area for Improvement
+   • Risk Factor: {risk_factor}
+   [Explanation - 1-2 sentences]
+
+   💡 Actionable Tips
+   1. [Specific tip with Paytm tool name]
+   2. [Specific tip with Paytm tool name]
+   3. [Specific tip with Paytm tool name]
+
+   🙏 Final Thoughts
+   [Encouraging closing - 1-2 sentences]
+
+   DO NOT OUTPUT THE TEXT "[BLANK LINE]" - USE ACTUAL EMPTY LINES BETWEEN SECTIONS!
+
+6. FOR GENERAL QUESTIONS (not credit):
+   Still use line breaks, bullets, and emojis
+   Don't force merchant context
+   Be helpful and friendly
+   Proper formatting is MANDATORY even for general chat
+
+7. CONTEXT HANDLING:
+   • Credit questions: Use merchant context from above
+   • General questions: Respond helpfully without score mention
+   • Mixed: Prioritize what user asked, reference score if relevant
+
+8. JARGON TRANSLATION:
+   • "Business Stability Index (BSI)" → "Daily QR & Soundbox transaction consistency"
+   • "Cascade Risk GNN" → "Financial health of your business partners"
+   • "Device Entropy" → "Device usage patterns"
+   • "Ghost Account" → "Account under security review"
+
+9. SCORE INTERPRETATION:
+   High (800+): 🎉 Celebrate! Explain what's working, mention limit increase
+   Medium (600-799): ✅ Good progress! Identify top risk, give 3 actionable tips
+   Low (<600): 💪 Supportive tone! Explain main issue clearly, give concrete steps
+
+10. FORBIDDEN:
+    • NO long paragraphs (max 2-3 sentences per section)
+    • NO emojis unless section headers or emphasis
+    • NO generic responses - always personalized
+    • NO skipping line breaks
+    • NO one continuous block of text
+
+Remember: FORMATTING IS NOT OPTIONAL. Every response MUST be clean, readable, with emojis, line breaks, and clear sections."""
+
+    try:
+        # Call OpenRouter API with fallback to alternative models if rate-limited
+        models_to_try = [
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "openrouter/auto",
+            "google/gemini-2.0-flash-exp:free",
+        ]
+        
+        response = None
+        last_error = None
+        
+        for model in models_to_try:
+            try:
+                response = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
+                        "HTTP-Referer": "http://127.0.0.1:8000",
+                        "X-Title": "CrediNode AI",
+                    },
+                    json={
+                        "model": model,
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": request.message},
+                        ],
+                        "temperature": 0.7,
+                        "max_tokens": 1024,
+                    },
+                    timeout=30,
+                )
+                
+                if response.status_code == 200:
+                    print(f"[Fimi] Using model: {model}")
+                    break
+                elif response.status_code == 429:
+                    print(f"[Fimi] Model {model} rate-limited, trying next...")
+                    last_error = response
+                    continue
+                else:
+                    print(f"[Fimi] Model {model} error: {response.status_code}")
+                    last_error = response
+                    continue
+            except Exception as e:
+                print(f"[Fimi] Model {model} failed: {str(e)}")
+                last_error = e
+                continue
+        
+        if response is None or response.status_code != 200:
+            error_msg = f"All models failed. Last error: {last_error}"
+            print(f"[Fimi] OpenRouter error: {error_msg}")
+            raise HTTPException(status_code=500, detail="Unable to reach AI service. Please try again.")
+        
+        result = response.json()
+        reply = result["choices"][0]["message"]["content"].strip()
+        
+        print(f"[Fimi] Q: {request.message[:50]}... → A: {reply[:50]}...")
+        
+        return {
+            "reply": reply,
+            "merchant_context": merchant_context,
+            "model": "auto-selected",
+        }
+    
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="OpenRouter request timeout")
+    except Exception as e:
+        print(f"[Fimi] Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
 
 
 # ─── Mount Dashboard (AFTER all routes) ────────────────────────────────────────

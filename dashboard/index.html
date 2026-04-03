@@ -1982,6 +1982,9 @@
         loanLimit: 500000,
         neighborCount: 12,
         highRiskCount: 1,
+        topRiskFactor: "Business Stability",
+        gate1Status: "PASS",
+        isGhost: false,
       };
 
       // ── Navigation ─────────────────────────────────────────────────────────────────
@@ -2000,57 +2003,143 @@
       // ── Presets ────────────────────────────────────────────────────────────────────
       const PRESETS = {
         stable: {
-          name:"Sharma Kirana Store", dse:0.78, lv:0.08, tv:2.1, rcv:0.15,
-          sr:0.95, adr:0.92, adrev:8500, ndr:0.06, ba:1825,
-          ct:1, mc:0, sb:1, qr:1, te:4.45, lhe:0.42, tp:0.88,
-          war:0.20, icf:0.05, udc:1, rts:25.0, nc:0.15, hrnc:1,
-          as:0.82, grisk:0.08,
+          name: "Sharma Kirana Store",
+          dse: 0.78,
+          lv: 0.08,
+          tv: 2.1,
+          rcv: 0.15,
+          sr: 0.95,
+          adr: 0.92,
+          adrev: 8500,
+          ndr: 0.06,
+          ba: 1825,
+          ct: 1,
+          mc: 0,
+          sb: 1,
+          qr: 1,
+          te: 4.45,
+          lhe: 0.42,
+          tp: 0.88,
+          war: 0.2,
+          icf: 0.05,
+          udc: 1,
+          rts: 25.0,
+          nc: 0.15,
+          hrnc: 1,
+          as: 0.82,
+          grisk: 0.08,
         },
         new: {
-          name:"Raju Mobile Repair (New)", dse:0.62, lv:0.22, tv:4.8, rcv:0.55,
-          sr:0.65, adr:0.72, adrev:2200, ndr:0.18, ba:150,
-          ct:2, mc:6, sb:0, qr:1, te:3.80, lhe:0.60, tp:0.52,
-          war:0.30, icf:0.80, udc:2, rts:-5.0, nc:0.06, hrnc:2,
-          as:0.60, grisk:0.28,
+          name: "Raju Mobile Repair (New)",
+          dse: 0.62,
+          lv: 0.22,
+          tv: 4.8,
+          rcv: 0.55,
+          sr: 0.65,
+          adr: 0.72,
+          adrev: 2200,
+          ndr: 0.18,
+          ba: 150,
+          ct: 2,
+          mc: 6,
+          sb: 0,
+          qr: 1,
+          te: 3.8,
+          lhe: 0.6,
+          tp: 0.52,
+          war: 0.3,
+          icf: 0.8,
+          udc: 2,
+          rts: -5.0,
+          nc: 0.06,
+          hrnc: 2,
+          as: 0.6,
+          grisk: 0.28,
         },
         risky: {
-          name:"Sanjay Fast Fashion", dse:0.45, lv:0.42, tv:8.5, rcv:0.82,
-          sr:0.38, adr:0.52, adrev:4500, ndr:0.45, ba:280,
-          ct:2, mc:3, sb:0, qr:1, te:2.90, lhe:0.68, tp:0.38,
-          war:0.42, icf:1.50, udc:4, rts:-18.0, nc:0.05, hrnc:6,
-          as:0.35, grisk:0.62,
+          name: "Sanjay Fast Fashion",
+          dse: 0.45,
+          lv: 0.42,
+          tv: 8.5,
+          rcv: 0.82,
+          sr: 0.38,
+          adr: 0.52,
+          adrev: 4500,
+          ndr: 0.45,
+          ba: 280,
+          ct: 2,
+          mc: 3,
+          sb: 0,
+          qr: 1,
+          te: 2.9,
+          lhe: 0.68,
+          tp: 0.38,
+          war: 0.42,
+          icf: 1.5,
+          udc: 4,
+          rts: -18.0,
+          nc: 0.05,
+          hrnc: 6,
+          as: 0.35,
+          grisk: 0.62,
         },
         ghost: {
-          name:"[GHOST] Script Bot XZ9", dse:0.04, lv:0.96, tv:42, rcv:0.98,
-          sr:0.05, adr:0.20, adrev:15000, ndr:0.82, ba:18,
-          ct:3, mc:4, sb:0, qr:0, te:0.30, lhe:0.99, tp:0.04,
-          war:0.55, icf:18.0, udc:22, rts:-200.0, nc:0.01, hrnc:15,
-          as:0.04, grisk:0.90,
+          name: "[GHOST] Script Bot XZ9",
+          dse: 0.04,
+          lv: 0.96,
+          tv: 42,
+          rcv: 0.98,
+          sr: 0.05,
+          adr: 0.2,
+          adrev: 15000,
+          ndr: 0.82,
+          ba: 18,
+          ct: 3,
+          mc: 4,
+          sb: 0,
+          qr: 0,
+          te: 0.3,
+          lhe: 0.99,
+          tp: 0.04,
+          war: 0.55,
+          icf: 18.0,
+          udc: 22,
+          rts: -200.0,
+          nc: 0.01,
+          hrnc: 15,
+          as: 0.04,
+          grisk: 0.9,
         },
       };
 
       function loadPreset(key) {
         const p = PRESETS[key];
         document.getElementById("inName").value = p.name;
-        setSlider("DSE", p.dse); setSlider("LV", p.lv); setSlider("TV", p.tv);
-        setSlider("RCV", p.rcv); setSlider("SR", p.sr); setSlider("ADR", p.adr);
-        setSlider("ADRev", p.adrev); setSlider("NDR", p.ndr); setSlider("BA", p.ba);
-  // Set all hidden inputs too:
-        document.getElementById("inCT").value   = p.ct;
-        document.getElementById("inMC").value   = p.mc;
-        document.getElementById("inSB").value   = p.sb;
-        document.getElementById("inQR").value   = p.qr;
-        document.getElementById("inTE").value   = p.te;
-        document.getElementById("inLHE").value  = p.lhe;
-        document.getElementById("inTP").value   = p.tp;
-        document.getElementById("inWAR").value  = p.war;
-        document.getElementById("inICF").value  = p.icf;
-        document.getElementById("inUDC").value  = p.udc;
-        document.getElementById("inRTS").value  = p.rts;
-        document.getElementById("inNC").value   = p.nc;
+        setSlider("DSE", p.dse);
+        setSlider("LV", p.lv);
+        setSlider("TV", p.tv);
+        setSlider("RCV", p.rcv);
+        setSlider("SR", p.sr);
+        setSlider("ADR", p.adr);
+        setSlider("ADRev", p.adrev);
+        setSlider("NDR", p.ndr);
+        setSlider("BA", p.ba);
+        // Set all hidden inputs too:
+        document.getElementById("inCT").value = p.ct;
+        document.getElementById("inMC").value = p.mc;
+        document.getElementById("inSB").value = p.sb;
+        document.getElementById("inQR").value = p.qr;
+        document.getElementById("inTE").value = p.te;
+        document.getElementById("inLHE").value = p.lhe;
+        document.getElementById("inTP").value = p.tp;
+        document.getElementById("inWAR").value = p.war;
+        document.getElementById("inICF").value = p.icf;
+        document.getElementById("inUDC").value = p.udc;
+        document.getElementById("inRTS").value = p.rts;
+        document.getElementById("inNC").value = p.nc;
         document.getElementById("inHRNC").value = p.hrnc;
-        document.getElementById("inAS").value   = p.as;
-        document.getElementById("inGRisk").value= p.grisk;
+        document.getElementById("inAS").value = p.as;
+        document.getElementById("inGRisk").value = p.grisk;
         computeScore();
       }
 
@@ -2065,6 +2154,8 @@
       function rangeUpdate(id, val) {
         const el = document.getElementById("v" + id);
         if (el) el.textContent = parseFloat(val).toFixed(val > 100 ? 0 : 2);
+        // Recompute score when any input changes
+        computeScore();
       }
 
       // ── Scoring Logic (Backend API Integration) ──────────────────────────────────
@@ -2170,6 +2261,12 @@
           };
           const limit = result.loan_limit || limits[band] || 75000;
 
+          // Extract top risk factor from SHAP reasons
+          const topRiskFactor =
+            result.shap_reasons && result.shap_reasons.length > 0
+              ? result.shap_reasons[0].label || "Business Stability"
+              : "Business Stability";
+
           // Update state
           Object.assign(state, {
             score,
@@ -2181,6 +2278,7 @@
             loanLimit: limit,
             isGhost,
             gate1Status: result.gate1?.status || "PASS",
+            topRiskFactor: topRiskFactor,
             shap_values: result.shap_reasons || [],
           });
 
@@ -2208,12 +2306,24 @@
 
         // AFTER: document.getElementById("merchantName").textContent = name;
         // ADD THIS:
-        const catNames = ["Kirana/Grocery","Restaurant","Pharmacy","Clothing","Electronics",        "Transport","Services","Education"];
-        const tierNames = ["","Tier 1 City","Tier 2 City","Tier 3 Town"];
+        const catNames = [
+          "Kirana/Grocery",
+          "Restaurant",
+          "Pharmacy",
+          "Clothing",
+          "Electronics",
+          "Transport",
+          "Services",
+          "Education",
+        ];
+        const tierNames = ["", "Tier 1 City", "Tier 2 City", "Tier 3 Town"];
         const catCode = parseInt(document.getElementById("inMC").value) || 0;
         const tierCode = parseInt(document.getElementById("inCT").value) || 1;
-        const ageDays  = parseInt(document.getElementById("inBA").value) || 365;
-        const ageLabel = ageDays >= 365 ? Math.round(ageDays/365) + " yr" : ageDays + " days";
+        const ageDays = parseInt(document.getElementById("inBA").value) || 365;
+        const ageLabel =
+          ageDays >= 365
+            ? Math.round(ageDays / 365) + " yr"
+            : ageDays + " days";
         document.getElementById("merchantId").textContent =
           tierNames[tierCode] + " · " + catNames[catCode] + " · " + ageLabel;
 
@@ -2508,29 +2618,12 @@
       }
 
       // ── Fimi Chatbot ───────────────────────────────────────────────────────────────
-      const FIMI_RESPONSES = {
-        score: (s, b, l, risk) =>
-          `Aapka <strong>CrediNode Score ${s}</strong> hai, jo <strong>"${b}"</strong> band mein aata hai! 🎉<br><br>Yeh score inke basis par compute hua:<br>• Business Stability Index (BSI)<br>• Network Contagion Risk (GNN)<br>• Behavioral DNA verification<br><br>Aap <strong>₹${l.toLocaleString("en-IN")}</strong> tak ke loan ke liye eligible hain. Top risk factor: <em>${risk}</em>.`,
-        improve: () =>
-          `Score improve karne ke 3 best tarike:<br><br>1. <strong>Settlement Regular Karein</strong> — Har transaction ka settlement time par karein. Yeh sabse bada factor hai.<br>2. <strong>Soundbox Use Karein</strong> — Soundbox usage se operational consistency prove hoti hai.<br>3. <strong>High-Risk Partners Avoid Karein</strong> — Jo suppliers default kar rahe hain, unse transactions kam karein. GNN unhe track karta hai!`,
-        loan: (limit) =>
-          `Aapki current credit limit <strong>₹${limit.toLocaleString("en-IN")}</strong> hai.<br><br>Limit badhane ke liye:<br>• Score 800+ maintain karein → ₹5,00,000<br>• Score 700–799 → ₹2,00,000<br>• 6 months consistently transact karein<br><br>Har month CrediNode score recalibrate hota hai!`,
-        gnn: () =>
-          `<strong>Cascade Risk GNN</strong> ek Graph Neural Network hai jo merchant network analyze karta hai.<br><br>Agar aapka supplier A default karta hai, to usse aap (B) ke default hone ka probability bhi badhta hai — epidemiological contagion ki tarah!<br><br>GCN 3 layers mein kaam karta hai:<br>• Layer 1: Aapke direct neighbors<br>• Layer 2: Neighbors ke neighbors<br>• Layer 3: Extended network<br><br>Yeh Paytm ke liye unique advantage hai — traditional banks ke paas yeh data nahi hai!`,
-        ghost: () =>
-          `Ghost accounts synthetic identities hote hain — real merchants nahi!<br><br>CrediNode ka Gate 1 (Isolation Forest) inhe pakadta hai:<br>• <strong>Device entropy very low</strong> — bot scripted sessions<br>• <strong>Location variance high</strong> — multiple IPs<br>• <strong>Transaction velocity extreme</strong> — 40+ txn/hour<br><br>Ghost account automatically reject ho jaata hai — loan nahi milta. Yeh fraud prevention hai! 🛡️`,
-        soundbox: () =>
-          `Soundbox aapke score ke liye <strong>bahut helpful</strong> hai! 🔊<br><br>Kyunki:<br>• Soundbox pings se daily transaction frequency prove hoti hai<br>• Iska data directly BSI (Business Stability Index) mein jaata hai<br>• Consistent pings = lower Revenue CV = higher stability score<br><br>Without Soundbox, yeh data points miss ho jaate hain aur score thoda kam hota hai. Paytm Soundbox register karein!`,
-        default: (name) =>
-          `Main samajh gaya! "${name}" ke baare mein aur kuch poochhna chahte hain to bataiye — score, loan limits, improvement tips, ya koi specific factor!`,
-      };
-
       function askFimi(text) {
         document.getElementById("fimiInput").value = text;
         sendFimi();
       }
 
-      function sendFimi() {
+      async function sendFimi() {
         const input = document.getElementById("fimiInput");
         const text = input.value.trim();
         if (!text) return;
@@ -2538,59 +2631,44 @@
         const msgs = document.getElementById("fimiMessages");
         msgs.innerHTML += `<div class="msg user">${text}</div>`;
         input.value = "";
+        msgs.scrollTop = msgs.scrollHeight;
 
-        setTimeout(() => {
-          const lower = text.toLowerCase();
-          const s = state.score,
-            b = state.band,
-            l = state.loanLimit;
-          let reply;
+        try {
+          // Build merchant context from current state
+          const merchantContext = {
+            name: document.getElementById("inName").value || "Unknown Merchant",
+            score: state.score || 700,
+            band: state.band || "Fair",
+            loan_limit: state.loanLimit || 75000,
+            risk_factor: state.topRiskFactor || "Business Stability",
+            status: state.gate1Status || "PASS",
+          };
 
-          if (
-            lower.includes("score") ||
-            lower.includes("kyu") ||
-            lower.includes("kyun") ||
-            lower.includes("why")
-          )
-            reply = FIMI_RESPONSES.score(s, b, l, "Neighbor Default Rate");
-          else if (
-            lower.includes("improve") ||
-            lower.includes("badhayein") ||
-            lower.includes("badha")
-          )
-            reply = FIMI_RESPONSES.improve();
-          else if (
-            lower.includes("loan") ||
-            lower.includes("credit") ||
-            lower.includes("limit") ||
-            lower.includes("kitna")
-          )
-            reply = FIMI_RESPONSES.loan(l);
-          else if (
-            lower.includes("gnn") ||
-            lower.includes("cascade") ||
-            lower.includes("network") ||
-            lower.includes("graph")
-          )
-            reply = FIMI_RESPONSES.gnn();
-          else if (
-            lower.includes("ghost") ||
-            lower.includes("reject") ||
-            lower.includes("fraud")
-          )
-            reply = FIMI_RESPONSES.ghost();
-          else if (lower.includes("soundbox"))
-            reply = FIMI_RESPONSES.soundbox();
-          else
-            reply = FIMI_RESPONSES.default(
-              document.getElementById("inName").value,
-            );
+          // Call backend /chat endpoint
+          const response = await fetch("/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              message: text,
+              merchant_context: merchantContext,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+          }
+
+          const result = await response.json();
+          const reply =
+            result.reply || "Samajh mein nahi aaya. Dobaara poochiye! 🙏";
 
           msgs.innerHTML += `<div class="msg fimi">${reply}</div>`;
           msgs.scrollTop = msgs.scrollHeight;
-        }, 600);
-
-        msgs.scrollTop = msgs.scrollHeight;
+        } catch (error) {
+          console.error("Fimi error:", error);
+          msgs.innerHTML += `<div class="msg fimi">Maafi chahta hoon! Abhi Fimi server nahi chal raha. Kripya baad mein dobara try karein. 🙏</div>`;
+          msgs.scrollTop = msgs.scrollHeight;
+        }
       }
 
       // ── Init ────────────────────────────────────────────────────────────────────────
