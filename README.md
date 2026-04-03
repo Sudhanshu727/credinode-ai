@@ -485,6 +485,6 @@ MIT License — Free for educational and commercial use.
 
 For issues, questions, or collaborations:
 
-- 📧 Email: your-email@example.com
+- 📧 Email: sudhanshus7907@gmail.com
 - 🐙 GitHub Issues: [Issue Tracker](https://github.com/Sudhanshu727/credinode-ai/issues)
 - 💬 Discussions: [GitHub Discussions](https://github.com/Sudhanshu727/credinode-ai/discussions)
