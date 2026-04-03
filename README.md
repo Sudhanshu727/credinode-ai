@@ -1,5 +1,5 @@
 # 🏦 CrediNode AI — Merchant Credit Underwriting Engine
-
+##TEAM:- FinanceBuddies
 ### FIN-O-HACK | Paytm × ASSETS DTU | Track 2: AI for Small Businesses
 
 ---
